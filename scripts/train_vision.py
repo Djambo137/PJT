@@ -50,7 +50,6 @@ from transformers import (
 LOGGER = logging.getLogger(__name__)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_DATA_DIR = SCRIPT_DIR / "data"
 DEFAULT_DATASET_NAME = "vision_dataset.jsonl"
 DEFAULT_IMAGE_ZIP_NAME = "antargaz_images_colab.zip"
 
@@ -91,7 +90,7 @@ def resolve_path_with_fallback(path: Path, *, description: str) -> Path:
         Path.cwd(),
         SCRIPT_DIR,
         SCRIPT_DIR.parent,
-        DEFAULT_DATA_DIR,
+        SCRIPT_DIR / "data",
         SCRIPT_DIR.parent / "data",
     ]
 
@@ -438,7 +437,7 @@ def parse_args(argv: Sequence[str] | None = None) -> VisionConfig:
         type=Path,
         nargs="?",
         default=None,
-        help="Path to vision_dataset.json or .jsonl (defaults to scripts/data/vision_dataset.jsonl)",
+        help="Path to vision_dataset.json or .jsonl (auto-discovers data/vision_dataset.jsonl)",
     )
     parser.add_argument(
         "--image-zip",
@@ -456,16 +455,45 @@ def parse_args(argv: Sequence[str] | None = None) -> VisionConfig:
     parser.add_argument("--max-target-length", type=int, default=1_200)
     args = parser.parse_args(argv)
 
-    default_dataset = DEFAULT_DATA_DIR / DEFAULT_DATASET_NAME
-    dataset_path = args.dataset or default_dataset
-    dataset_path = resolve_path_with_fallback(dataset_path, description="dataset")
+    dataset_candidates: List[Path] = []
+    if args.dataset is not None:
+        dataset_candidates.append(args.dataset)
+    else:
+        dataset_candidates.extend(
+            [
+                Path(DEFAULT_DATASET_NAME),
+                Path("data") / DEFAULT_DATASET_NAME,
+                SCRIPT_DIR / "data" / DEFAULT_DATASET_NAME,
+            ]
+        )
+
+    dataset_path: Path | None = None
+    for candidate in dataset_candidates:
+        try:
+            dataset_path = resolve_path_with_fallback(candidate, description="dataset")
+            break
+        except FileNotFoundError:
+            continue
+    if dataset_path is None:
+        raise FileNotFoundError(
+            "Could not locate the dataset. Pass it explicitly or place it under data/vision_dataset.jsonl."
+        )
 
     image_zip: Path | None
     if args.image_zip is not None:
         image_zip = resolve_path_with_fallback(args.image_zip, description="image archive")
     else:
-        default_zip = DEFAULT_DATA_DIR / DEFAULT_IMAGE_ZIP_NAME
-        image_zip = resolve_path_with_fallback(default_zip, description="image archive") if default_zip.exists() else None
+        image_zip = None
+        for candidate in (
+            Path(DEFAULT_IMAGE_ZIP_NAME),
+            Path("data") / DEFAULT_IMAGE_ZIP_NAME,
+            SCRIPT_DIR / "data" / DEFAULT_IMAGE_ZIP_NAME,
+        ):
+            try:
+                image_zip = resolve_path_with_fallback(candidate, description="image archive")
+                break
+            except FileNotFoundError:
+                continue
 
     image_dir = args.image_dir.expanduser()
     if not image_dir.is_absolute():
