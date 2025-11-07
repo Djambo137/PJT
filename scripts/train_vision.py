@@ -433,9 +433,8 @@ def train_vision_model(config: VisionConfig) -> None:
 def parse_args(argv: Sequence[str] | None = None) -> VisionConfig:
     parser = argparse.ArgumentParser(description="Fine-tune Qwen2-VL on fiche-idée images")
     parser.add_argument(
-        "dataset",
+        "--dataset",
         type=Path,
-        nargs="?",
         default=None,
         help="Path to vision_dataset.json or .jsonl (auto-discovers data/vision_dataset.jsonl)",
     )

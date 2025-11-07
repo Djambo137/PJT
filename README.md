@@ -9,7 +9,7 @@ recalage des chemins d'images, extraction d'archives ZIP) avant le fine-tuning.
 
 ```bash
 python scripts/train_vision.py \
-  data/vision_dataset.jsonl \
+  --dataset data/vision_dataset.jsonl \
   --image-zip data/antargaz_images_colab.zip \
   --image-dir dataset_fiches/vision \
   --output-dir models/fiche_idee_lora/vision
@@ -19,7 +19,7 @@ Le script accepte indifféremment un fichier JSON ou JSONL.  Si le fichier est
 au format JSON, il est converti automatiquement en JSONL (format accepté par
 `datasets.load_dataset`).  Toutes les images PNG du ZIP sont extraites dans le
 répertoire indiqué afin que les chemins référencés dans le dataset soient
-valides.  Si vous omettez l'argument `dataset` ou `--image-zip`, le script
+valides.  Si vous omettez l'argument `--dataset` ou `--image-zip`, le script
 tente de les retrouver automatiquement dans `data/` ou `scripts/data/`.
 
 ### Exemple d'utilisation dans Google Colab
